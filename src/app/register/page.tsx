@@ -6,38 +6,40 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardAction,
+  CardHeader,
+  CardTitle,
   CardContent,
   CardFooter,
-  CardHeader,
-  CardTitle
 } from "@/components/ui/card";
 
-export default function LoginPage() {
+import Link from "next/link";
+
+
+export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const router = useRouter();
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
-        credentials: "include", 
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        router.push("/dashboard");
+        setMessage("Registration successful! Redirecting to login...");
+        setTimeout(() => router.push("/"), 1500);
       } else {
-        setError(data.message || "Login failed");
+        setMessage(data.message || "Registration failed");
       }
     } catch (err) {
       console.error(err);
-      setError("Something went wrong");
+      setMessage("Something went wrong");
     }
   };
 
@@ -46,7 +48,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md p-6 shadow-lg">
         <CardHeader>
           <CardTitle className="text-center text-2xl font-semibold">
-            Login
+            Register
           </CardTitle>
         </CardHeader>
 
@@ -63,23 +65,31 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {message && (
+            <p
+              className={`text-sm ${
+                message.startsWith("")
+                  ? "text-green-600"
+                  : "text-red-500"
+              }`}
+            >
+              {message}
+            </p>
+          )}
         </CardContent>
 
         <CardFooter className="flex flex-col gap-3">
-          <Button onClick={handleLogin} className="w-full">
-            Login
+          <Button onClick={handleRegister} className="w-full">
+            Register
           </Button>
           <p className="text-sm text-center">
-            Don’t have an account?{" "}
-            <a href="/register" className="text-blue-600 hover:underline">
-              Register
-            </a>
-          </p>
+  Already have an account?{" "}
+  <Link href="/" className="text-blue-600 hover:underline">
+    Login
+  </Link>
+</p>
         </CardFooter>
       </Card>
     </div>
-    
   );
 }
-

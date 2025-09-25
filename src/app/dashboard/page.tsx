@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { NavigationMenu } from "@/components/ui/navigation-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { axiosInstance as axios } from "@/lib/axios";
+import { Header } from "./../../_components/header";
+import { useFetch } from "@/lib/hooks/useFetch";
+
 import {
   Select,
   SelectContent,
@@ -15,6 +15,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { Bar, BarChart, XAxis } from "recharts";
+import { TrendingUp } from "lucide-react";
+import { CartesianGrid, LabelList } from "recharts";
+
 import {
   Card,
   CardContent,
@@ -24,138 +28,104 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  CartesianGrid,
-  Tooltip,
-  LineChart,
-  Line,
-  YAxis,
-} from "recharts";
-import { TrendingUp } from "lucide-react";
-import axios from "axios";
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { IssueType, ProjectType } from "../../../../types/models.type";
 
-const keyOptions: IssueKey[] = ["status", "priority", "assignee", "issueType"];
+export const description = "A bar chart with a label";
+const chartData = [
+  { month: "January", desktop: 186 },
+  { month: "February", desktop: 305 },
+  { month: "March", desktop: 237 },
+  { month: "April", desktop: 73 },
+  { month: "May", desktop: 209 },
+  { month: "June", desktop: 214 },
+];
 
-// Component
+const chartConfig = {
+  desktop: {
+    label: "Desktop",
+    color: "var(--chart-1)",
+  },
+} satisfies ChartConfig;
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<{ name: string } | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [selectedKey, setSelectedKey] = useState<IssueKey>(keyOptions[0]);
+  const {
+    data: projectsData,
+    loading: projectLoading,
+    error: projectError,
+  } = useFetch<ProjectType[]>({ url: "/projects", defaultState: [] });
 
-  const [loading, setLoading] = useState(true);
-
-  const router = useRouter();
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await axios.get("/api/auth/profile", {
-          withCredentials: true,
-        });
-        setUser(res.data.user);
-      } catch (err) {
-        console.error("Profile fetch failed", err);
-        router.push("/");
-      }
-    };
-
-    fetchProfile();
-  }, [router]);
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const res = await axios.get<Project[]>("/api/etl/projects");
-        setProjects(res.data);
-
-        if (res.data.length > 0) {
-          setSelectedProject(res.data[0]);
-        }
-      } catch (err) {
-        console.error("Failed to fetch projects:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProjects();
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await axios.post(
-        "/api/auth/logout",
-        {},
-        {
-          withCredentials: true,
-        }
-      );
-      router.push("/");
-    } catch (err) {
-      console.error("Failed to logout", err);
-    }
-  };
-  console.log("user", user);
-  console.log("projects", projects);
-  console.log("selectedProject", selectedProject);
-  if (loading || !user || !selectedProject) return <p>Loading...</p>;
-
-  // Chart data
-
-  const chartData = selectedProject.issues.reduce<
-    { label: string; count: number }[]
-  >((acc, issue) => {
-    const keyValue = issue[selectedKey] ?? "Unknown";
-    const found = acc.find((x) => x.label === keyValue);
-    if (found) found.count += 1;
-    else acc.push({ label: keyValue, count: 1 });
-    return acc;
-  }, []);
-
-  // Line chart
-  const issuesOverTime = selectedProject.issues.reduce<Record<string, number>>(
-    (acc, issue) => {
-      acc[issue.created] = (acc[issue.created] || 0) + 1;
-      return acc;
-    },
-    {}
+  const [selectedProject, setSelectedProject] = useState<ProjectType | null>(
+    null
   );
 
-  const lineChartData = Object.entries(issuesOverTime).map(([date, count]) => ({
-    date,
-    issue: count,
-  }));
+  const [issues, setIssues] = useState<IssueType[]>([]);
+
+  const [selectedKey, setSelectedKey] = useState<string>("");
+  const [keyOptions, setKeyOptions] = useState<string[]>([]);
+
+  const [issuesLoading, setIssuesLoading] = useState(false);
+
+  const fetchIssues = async (selectedProject: ProjectType) => {
+    setIssuesLoading(true);
+    try {
+      const res = await axios.get<IssueType[]>(
+        `/projects/${selectedProject.key}/issues`
+      );
+      setIssues(res.data);
+
+      if (res.data.length > 0) {
+        const allowedKeys = [
+          "status",
+          "priority",
+          "assignee",
+          "reporter",
+          "summary",
+          "issueType",
+        ];
+
+        const issueKeys = Object.keys(res.data[0]);
+        const filteredKeys = issueKeys.filter((key) =>
+          allowedKeys.includes(key)
+        );
+
+        setKeyOptions(filteredKeys);
+        if (!selectedKey && filteredKeys.length > 0) {
+          setSelectedKey(filteredKeys[0]);
+        }
+      } else {
+        setKeyOptions([]);
+        setSelectedKey("");
+      }
+    } catch (err) {
+      console.error("Failed to fetch issues:", err);
+      setIssues([]);
+      setKeyOptions([]);
+    } finally {
+      setIssuesLoading(false);
+    }
+  };
+
+  if (issuesLoading || projectLoading) return <p>Loading...</p>;
+  if (!projectsData) return <p>No project Data</p>;
 
   return (
     <div style={{ padding: "2rem" }}>
-      <header className="w-full h-14 flex items-center justify-between px-6 bg-white border-b shadow-sm">
-        <div className="text-xl font-semibold">Chart</div>
-        <NavigationMenu />
-        <div className="flex items-center gap-3">
-          <Button size="sm" onClick={handleLogout}>
-            Log Out
-          </Button>
-          <Avatar className="w-8 h-8">
-            <AvatarImage src="/me.png" alt="user" />
-            <AvatarFallback>
-              {user?.name?.charAt(0)?.toUpperCase() ?? "?"}
-            </AvatarFallback>
-          </Avatar>
-        </div>
-      </header>
-
-      <p className="mt-4">Welcome, {user.name}!</p>
+      <Header />
 
       <div className="flex gap-4 mt-6 mb-6">
-        {/* Project select */}
         <Select
-          value={selectedProject.projectKey}
+          value={selectedProject?.key}
           onValueChange={(value) => {
-            const proj = projects.find((p) => p.projectKey === value);
-            if (proj) setSelectedProject(proj);
+            const proj = projectsData.find((p) => p.key === value);
+            if (proj) {
+              setSelectedProject(proj);
+              fetchIssues(proj);
+            }
           }}
         >
           <SelectTrigger className="w-[180px]">
@@ -164,19 +134,18 @@ export default function DashboardPage() {
           <SelectContent>
             <SelectGroup>
               <SelectLabel>Select a Project</SelectLabel>
-              {projects.map((project) => (
-                <SelectItem key={project.projectId} value={project.projectKey}>
-                  {project.projectName}
+              {projectsData.map((project) => (
+                <SelectItem key={project.id} value={project.key}>
+                  {project.name}
                 </SelectItem>
               ))}
             </SelectGroup>
           </SelectContent>
         </Select>
 
-        {/* Key select */}
         <Select
           value={selectedKey}
-          onValueChange={(value) => setSelectedKey(value as IssueKey)}
+          onValueChange={(value) => setSelectedKey(value)}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select a key" />
@@ -184,69 +153,75 @@ export default function DashboardPage() {
           <SelectContent>
             <SelectGroup>
               <SelectLabel>Select Key</SelectLabel>
-              {keyOptions.map((k) => (
-                <SelectItem key={k} value={k}>
-                  {k.charAt(0).toUpperCase() + k.slice(1)}
+              {keyOptions.map((keyOption) => (
+                <SelectItem key={keyOption} value={keyOption}>
+                  {keyOption.charAt(0).toUpperCase() + keyOption.slice(1)}
                 </SelectItem>
               ))}
             </SelectGroup>
           </SelectContent>
         </Select>
       </div>
+      <div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Key -{selectedProject?.key} </CardTitle>
+            <CardDescription>January - June 2024</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig}>
+              <BarChart
+                accessibilityLayer
+                data={chartData}
+                margin={{
+                  top: 20,
+                }}
+              >
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tickLine={false}
+                  tickMargin={10}
+                  axisLine={false}
+                  tickFormatter={(value) => value.slice(0, 3)}
+                />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel />}
+                />
+                <Bar dataKey="desktop" fill="var(--color-desktop)" radius={8}>
+                  <LabelList
+                    position="top"
+                    offset={12}
+                    className="fill-foreground"
+                    fontSize={12}
+                  />
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+          <CardFooter className="flex-col items-start gap-2 text-sm">
+            <div className="flex gap-2 leading-none font-medium">
+              Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+            </div>
+            <div className="text-muted-foreground leading-none">
+              Showing total visitors for the last 6 months
+            </div>
+          </CardFooter>
+        </Card>
 
-      {/* Bar Chart */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Bar Chart - {selectedKey}</CardTitle>
-          <CardDescription>{selectedProject.projectName}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BarChart
-            width={600}
-            height={300}
-            data={chartData}
-            margin={{ top: 20 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="label" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="count" fill="#201d61ff" radius={8} />
-          </BarChart>
-        </CardContent>
-      </Card>
-
-      {/* Line Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Issues Created Over Time</CardTitle>
-          <CardDescription>{selectedProject.projectName}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <LineChart
-            width={600}
-            height={300}
-            data={lineChartData}
-            margin={{ top: 20 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Line
-              type="monotone"
-              dataKey="issue"
-              stroke="#8884d8"
-              strokeWidth={2}
-            />
-          </LineChart>
-        </CardContent>
-        <CardFooter className="flex-col items-start gap-2 text-sm">
-          <div className="flex gap-2 leading-none font-medium">
-            Issues <TrendingUp className="h-4 w-4" />
+        <Card>
+          <div className="text-muted-foreground leading-none">
+            {selectedKey === "summary" && (
+              <ul>
+                {issues.map((issue) => (
+                  <li key={issue.id}>{issue.summary}</li>
+                ))}
+              </ul>
+            )}
           </div>
-        </CardFooter>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

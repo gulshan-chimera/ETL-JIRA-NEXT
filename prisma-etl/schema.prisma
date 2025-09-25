@@ -1,0 +1,29 @@
+generator client_etl {
+  provider = "prisma-client-js"
+  output   = "../prisma-client-etl"
+}
+
+datasource etl {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_ETL")
+}
+
+model Issue {
+  id        String   @id
+  key       String
+  summary   String
+  status    String
+  assignee  String?
+  created   DateTime
+  updated   DateTime
+  projectId String
+  Project   Project  @relation(fields: [projectId], references: [id])
+}
+
+model Project {
+  id    String  @id
+  key   String
+  name  String
+  lead  String?
+  Issue Issue[]
+}

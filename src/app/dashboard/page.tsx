@@ -43,17 +43,17 @@ const keyOptions: IssueKey[] = ["status", "priority", "assignee", "issueType"];
 export default function DashboardPage() {
   const [user, setUser] = useState<{ name: string } | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProject, setSelectedProject] = useState<Project|null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedKey, setSelectedKey] = useState<IssueKey>(keyOptions[0]);
 
-const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   const router = useRouter();
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/auth/profile", {
+        const res = await axios.get("/api/auth/profile", {
           withCredentials: true,
         });
         setUser(res.data.user);
@@ -65,40 +65,44 @@ const [loading, setLoading] = useState(true);
 
     fetchProfile();
   }, [router]);
-useEffect(() => {
-  const fetchProjects = async () => {
-    try {
-      const res = await axios.get<Project[]>("http://localhost:5000/jira");
-      setProjects(res.data);
-  
-      if (res.data.length > 0) {
-        setSelectedProject(res.data[0]);
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const res = await axios.get<Project[]>("/api/etl/projects");
+        setProjects(res.data);
+
+        if (res.data.length > 0) {
+          setSelectedProject(res.data[0]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch projects:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Failed to fetch projects:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  fetchProjects();
-}, []);
+    fetchProjects();
+  }, []);
 
-const handleLogout= async () => {
+  const handleLogout = async () => {
     try {
-      await axios.post("http://localhost:5000/api/auth/logout",{},  {
-      withCredentials: true,
-    });
-    router.push("/"); 
+      await axios.post(
+        "/api/auth/logout",
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+      router.push("/");
     } catch (err) {
       console.error("Failed to logout", err);
-    } 
+    }
   };
-
+  console.log("user", user);
+  console.log("projects", projects);
+  console.log("selectedProject", selectedProject);
   if (loading || !user || !selectedProject) return <p>Loading...</p>;
 
-
-  
   // Chart data
 
   const chartData = selectedProject.issues.reduce<
@@ -111,7 +115,7 @@ const handleLogout= async () => {
     return acc;
   }, []);
 
-  // Line chart 
+  // Line chart
   const issuesOverTime = selectedProject.issues.reduce<Record<string, number>>(
     (acc, issue) => {
       acc[issue.created] = (acc[issue.created] || 0) + 1;
@@ -161,10 +165,7 @@ const handleLogout= async () => {
             <SelectGroup>
               <SelectLabel>Select a Project</SelectLabel>
               {projects.map((project) => (
-                <SelectItem
-                  key={project.projectId}
-                  value={project.projectKey}
-                >
+                <SelectItem key={project.projectId} value={project.projectKey}>
                   {project.projectName}
                 </SelectItem>
               ))}
@@ -173,7 +174,10 @@ const handleLogout= async () => {
         </Select>
 
         {/* Key select */}
-        <Select value={selectedKey}  onValueChange={(value) => setSelectedKey(value as IssueKey)}>
+        <Select
+          value={selectedKey}
+          onValueChange={(value) => setSelectedKey(value as IssueKey)}
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select a key" />
           </SelectTrigger>
@@ -197,7 +201,12 @@ const handleLogout= async () => {
           <CardDescription>{selectedProject.projectName}</CardDescription>
         </CardHeader>
         <CardContent>
-          <BarChart width={600} height={300} data={chartData} margin={{ top: 20 }}>
+          <BarChart
+            width={600}
+            height={300}
+            data={chartData}
+            margin={{ top: 20 }}
+          >
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="label" />
             <YAxis />
@@ -214,12 +223,22 @@ const handleLogout= async () => {
           <CardDescription>{selectedProject.projectName}</CardDescription>
         </CardHeader>
         <CardContent>
-          <LineChart width={600} height={300} data={lineChartData} margin={{ top: 20 }}>
+          <LineChart
+            width={600}
+            height={300}
+            data={lineChartData}
+            margin={{ top: 20 }}
+          >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date"  />
+            <XAxis dataKey="date" />
             <YAxis />
             <Tooltip />
-            <Line type="monotone" dataKey="issue" stroke="#8884d8" strokeWidth={2} />
+            <Line
+              type="monotone"
+              dataKey="issue"
+              stroke="#8884d8"
+              strokeWidth={2}
+            />
           </LineChart>
         </CardContent>
         <CardFooter className="flex-col items-start gap-2 text-sm">

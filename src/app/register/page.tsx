@@ -14,7 +14,6 @@ import {
 
 import Link from "next/link";
 
-
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +22,7 @@ export default function RegisterPage() {
 
   const handleRegister = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/auth/register", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -68,9 +67,7 @@ export default function RegisterPage() {
           {message && (
             <p
               className={`text-sm ${
-                message.startsWith("")
-                  ? "text-green-600"
-                  : "text-red-500"
+                message.startsWith("") ? "text-green-600" : "text-red-500"
               }`}
             >
               {message}
@@ -83,11 +80,11 @@ export default function RegisterPage() {
             Register
           </Button>
           <p className="text-sm text-center">
-  Already have an account?{" "}
-  <Link href="/" className="text-blue-600 hover:underline">
-    Login
-  </Link>
-</p>
+            Already have an account?{" "}
+            <Link href="/" className="text-blue-600 hover:underline">
+              Login
+            </Link>
+          </p>
         </CardFooter>
       </Card>
     </div>

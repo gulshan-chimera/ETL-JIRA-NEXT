@@ -10,7 +10,7 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-  CardTitle
+  CardTitle,
 } from "@/components/ui/card";
 
 export default function LoginPage() {
@@ -21,11 +21,11 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
-        credentials: "include", 
+        credentials: "include",
       });
 
       const data = await res.json();
@@ -79,7 +79,5 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
     </div>
-    
   );
 }
-

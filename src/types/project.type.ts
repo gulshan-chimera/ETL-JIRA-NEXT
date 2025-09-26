@@ -1,19 +1,15 @@
-interface Issue {
-  issueKey: string;
-  summary: string;
-  issueType: string;
-  status: string;
-  priority: string;
-  assignee: string;
-  created: string;
+export interface ProjectType {
+  expand: string;
+  self: string;
+  id: string;
+  key: string;
+  name: string;
+  avatarUrls: Record<string, string>;
+  projectTypeKey: string;
+  simplified?: boolean;
+  style?: string;
+  isPrivate: boolean;
+  properties: Record<string, unknown>;
+  entityId: string;
+  uuid: string;
 }
-
-interface Project {
-  projectId: string;
-  projectKey: string;
-  projectName: string;
-  projectLead: string;
-  issues: Issue[];
-}
-
-type IssueKey = "status" | "priority" | "assignee" | "issueType";

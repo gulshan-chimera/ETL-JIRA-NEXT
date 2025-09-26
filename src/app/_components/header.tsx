@@ -41,13 +41,15 @@ export function Header() {
           <Avatar className="w-8 h-8">
             <AvatarImage src="/me.png" alt="user" />
             <AvatarFallback>
-              {userData.user.name.charAt(0)?.toUpperCase() ?? "?"}
-            </AvatarFallback>
+  {userData?.user?.name?.charAt(0)?.toUpperCase() ?? "?"}
+</AvatarFallback>
+
           </Avatar>
         </div>
       </header>
 
-      <p className="mt-4">Welcome, {userData.user.name}!</p>
+     <p className="mt-4">Welcome, {userData?.user?.name ?? "User"}!</p>
+
     </>
   );
 }

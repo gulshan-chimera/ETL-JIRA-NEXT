@@ -67,9 +67,12 @@ export default function LoginPage() {
         </CardContent>
 
         <CardFooter className="flex flex-col gap-3">
-          <Button onClick={handleLogin} className="w-full">
+          <CardAction>
+<Button onClick={handleLogin} className="w-full">
             Login
           </Button>
+          </CardAction>
+          
           <p className="text-sm text-center">
             Don’t have an account?{" "}
             <a href="/register" className="text-blue-600 hover:underline">

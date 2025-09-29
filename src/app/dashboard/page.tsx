@@ -29,6 +29,7 @@ import type { ProjectType } from "@/types/project.type";
 import type { IssueType } from "@/types/issue.type";
 
 import { Header } from "../_components/header";
+import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
 
 export default function DashboardPage() {
   const {
@@ -51,7 +52,7 @@ export default function DashboardPage() {
     null,
   );
 
-  // issues state
+  // issues of selected project
   const [issues, setIssues] = useState<IssueType[]>([]);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
 
@@ -85,8 +86,10 @@ export default function DashboardPage() {
         <Select
           value={selectedProject?.key}
           onValueChange={(value) => {
+            //find by project key
             const proj = projectsData.find((p) => p.key === value);
             if (proj) {
+              //project data into selected project
               setSelectedProject(proj);
               setSelectedIssueId(null); 
             }
@@ -100,7 +103,7 @@ export default function DashboardPage() {
               <SelectLabel>Projects</SelectLabel>
               {projectsData.map((project) => (
                 <SelectItem key={project.id} value={project.key}>
-                  {project.name}
+                  {project.name} - {project.id}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -121,7 +124,7 @@ export default function DashboardPage() {
               <SelectLabel>Issues</SelectLabel>
               {issues.map((issue) => (
                 <SelectItem key={issue.id} value={issue.id}>
-                  {issue.key}
+                  {issue.key} - {issue.id}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -134,16 +137,31 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Project: {selectedProject?.name} ({selectedProject?.key})
+              {selectedProject?.name} ({selectedProject?.key})
             </CardTitle>
             <CardDescription>January - June 2024</CardDescription>
           </CardHeader>
           <CardContent>
             <div>
               {selectedIssueId
-                ? `Selected Issue: ${selectedIssueId}`
+                ? `Issue - ${selectedIssueId}`
                 : "No issue selected"}
             </div>
+              <Card className="mb-6">
+        <CardHeader>
+        
+          <CardDescription>{selectedProject?.name}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BarChart width={600} height={300}  margin={{ top: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="label" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="count" fill="#201d61ff" radius={8} />
+          </BarChart>
+        </CardContent>
+      </Card>
           </CardContent>
           <CardFooter className="flex-col items-start gap-2 text-sm">
             <div className="flex gap-2 leading-none font-medium">

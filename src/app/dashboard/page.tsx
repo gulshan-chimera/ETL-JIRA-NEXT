@@ -14,8 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { TrendingUp } from "lucide-react";
-
 import {
   Card,
   CardContent,
@@ -96,6 +94,15 @@ export default function DashboardPage() {
       fill: "#9c6403ff",
     },
   ];
+
+  // Count issues per assignee
+  const assigneeData = Object.entries(
+    issues.reduce((acc: Record<string, number>, issue) => {
+      const assignee = issue.assignee ?? "Unassigned";
+      acc[assignee] = (acc[assignee] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([assignee, count]) => ({ assignee, count }));
 
   if (projectLoading) return <p>Loading...</p>;
   if (projectError) return <p>Error in fetching Project data</p>;
@@ -200,27 +207,27 @@ export default function DashboardPage() {
           {/* Bar Chart */}
           <Card className='flex-1'>
             <CardHeader>
-              <CardTitle>
-                {selectedProject?.name} ({selectedProject?.key})
-              </CardTitle>
-              <CardDescription>January - June 2024</CardDescription>
+              <CardTitle>{selectedProject?.name}</CardTitle>
+              <CardDescription>({selectedProject?.key})</CardDescription>
             </CardHeader>
             <CardContent>
-              <BarChart width={500} height={300} margin={{ top: 20 }}>
+              <BarChart
+                width={500}
+                height={300}
+                margin={{ top: 20 }}
+                data={assigneeData}
+              >
                 <CartesianGrid strokeDasharray='3 3' vertical={false} />
-                <XAxis dataKey='label' />
+                <XAxis dataKey='assignee' />
                 <YAxis />
                 <Tooltip />
                 <Bar dataKey='count' fill='#201d61ff' radius={8} />
               </BarChart>
             </CardContent>
             <CardFooter className='flex-col items-start gap-2 text-sm'>
-              <div className='flex gap-2 leading-none font-medium'>
-                Trending up by 5.2% this month{" "}
-                <TrendingUp className='h-4 w-4' />
-              </div>
+             
               <div className='text-muted-foreground leading-none'>
-                Showing total visitors for the last 6 months
+                {selectedProject?.key}
               </div>
             </CardFooter>
           </Card>
